@@ -1,68 +1,80 @@
 'use client';
-import { useState } from 'react';
-import styles from './page.module.css';
 
-// Define mood types
-type MoodTypes = 'happy' | 'peaceful' | 'normal' | 'sad' | 'angry';
+import React, { useState, useEffect } from 'react';
 
-type DayMood = {
+interface Day {
   day: number;
-  mood: MoodTypes | null;
-};
+  mood: string | null;
+}
 
-// Define mood options outside the component
-const moodOptions: Record<MoodTypes, string> = {
-  happy: '#FFD700',    // Gold
-  peaceful: '#87CEEB', // Sky Blue
-  normal: '#98FB98',   // Pale Green
-  sad: '#B0C4DE',     // Light Steel Blue
-  angry: '#FFB6C1'    // Light Pink
-};
+export default function MoodTracker() {
+  const moodOptions: Record<string, string> = {
+    happy: '#FFD700',
+    peaceful: '#87CEEB',
+    normal: '#98FB98',
+    sad: '#B0C4DE',
+    angry: '#FFB6C1'
+  };
 
-export default function Home() {
-  // Initialize February days
-  const [days, setDays] = useState<DayMood[]>(
-    Array.from({ length: 29 }, (_, i) => ({
-      day: i + 1,
-      mood: null
-    }))
-  );
+  const [days, setDays] = useState<Day[]>(() => {
+    const savedMoods = localStorage.getItem('februaryMoods');
+    return savedMoods 
+      ? JSON.parse(savedMoods) 
+      : Array.from({ length: 29 }, (_, i) => ({
+          day: i + 1,
+          mood: null
+        }));
+  });
 
-  // Update mood for a day
-  const handleMoodClick = (day: number, mood: MoodTypes) => {
-    setDays(days.map(d => 
-      d.day === day ? { ...d, mood } : d
-    ));
+  useEffect(() => {
+    localStorage.setItem('februaryMoods', JSON.stringify(days));
+  }, [days]);
+
+  const handleMoodClick = (dayToUpdate: number, mood: string) => {
+    setDays(currentDays => 
+      currentDays.map(day => 
+        day.day === dayToUpdate 
+          ? { ...day, mood: day.mood === mood ? null : mood } 
+          : day
+      )
+    );
   };
 
   return (
-    <main className={styles.main}>
+    <div className="App">
       <h1>February 2024 Mood Tracker</h1>
       
-      {/* Mood Legend */}
-      <div className={styles.moodLegend}>
-        {(Object.entries(moodOptions) as [MoodTypes, string][]).map(([mood, color]) => (
-          <div key={mood} className={styles.moodItem}>
-            <div className={styles.colorCircle} style={{ backgroundColor: color }}></div>
+      <div className="mood-legend">
+        {Object.entries(moodOptions).map(([mood, color]) => (
+          <div key={mood} className="mood-item">
+            <div className="color-circle" style={{ backgroundColor: color }}></div>
             <span>{mood}</span>
           </div>
         ))}
       </div>
 
-      {/* Hearts Calendar */}
-      <div className={styles.calendar}>
+      <div className="calendar">
         {days.map((day) => (
-          <div key={day.day} className={styles.heartContainer}>
+          <div key={day.day} className="heart-container">
             <div 
-              className={styles.heart}
-              style={{ backgroundColor: day.mood ? moodOptions[day.mood] : '#e0e0e0' }}
+              className="heart"
+              style={{ 
+                backgroundColor: day.mood 
+                  ? moodOptions[day.mood] 
+                  : '#e0e0e0' 
+              }}
             >
-              <span className={styles.dayNumber}>{day.day}</span>
-              <div className={styles.moodSelector}>
-                {(Object.entries(moodOptions) as [MoodTypes, string][]).map(([mood, color]) => (
+              <span className="day-number">{day.day}</span>
+              <div className="mood-selector">
+                {Object.entries(moodOptions).map(([mood, color]) => (
                   <button
                     key={mood}
-                    style={{ backgroundColor: color }}
+                    style={{ 
+                      backgroundColor: color,
+                      border: day.mood === mood 
+                        ? '2px solid black' 
+                        : 'none'
+                    }}
                     onClick={() => handleMoodClick(day.day, mood)}
                     title={mood}
                   ></button>
@@ -73,17 +85,16 @@ export default function Home() {
         ))}
       </div>
 
-      {/* Statistics */}
-      <div className={styles.statistics}>
+      <div className="statistics">
         <h2>Monthly Overview</h2>
-        {(Object.entries(moodOptions) as [MoodTypes, string][]).map(([mood, color]) => (
-          <div key={mood} className={styles.statItem}>
-            <div className={styles.colorCircle} style={{ backgroundColor: color }}></div>
+        {Object.entries(moodOptions).map(([mood, color]) => (
+          <div key={mood} className="stat-item">
+            <div className="color-circle" style={{ backgroundColor: color }}></div>
             <span>{mood}: </span>
             <span>{days.filter(d => d.mood === mood).length} days</span>
           </div>
         ))}
       </div>
-    </main>
+    </div>
   );
 }
