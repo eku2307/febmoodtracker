@@ -2,13 +2,17 @@
 
 import React, { useState, useEffect } from 'react';
 
+interface MoodOptions {
+  [key: string]: string;
+}
+
 interface Day {
   day: number;
   mood: string | null;
 }
 
-export default function MoodTracker() {
-  const moodOptions: Record<string, string> = {
+export default function Home() {
+  const moodOptions: MoodOptions = {
     happy: '#FFD700',
     peaceful: '#87CEEB',
     normal: '#98FB98',
@@ -17,17 +21,25 @@ export default function MoodTracker() {
   };
 
   const [days, setDays] = useState<Day[]>(() => {
-    const savedMoods = localStorage.getItem('februaryMoods');
-    return savedMoods 
-      ? JSON.parse(savedMoods) 
-      : Array.from({ length: 29 }, (_, i) => ({
-          day: i + 1,
-          mood: null
-        }));
+    if (typeof window !== 'undefined') {
+      const savedMoods = localStorage.getItem('februaryMoods');
+      return savedMoods 
+        ? JSON.parse(savedMoods) 
+        : Array.from({ length: 29 }, (_, i) => ({
+            day: i + 1,
+            mood: null
+          }));
+    }
+    return Array.from({ length: 29 }, (_, i) => ({
+      day: i + 1,
+      mood: null
+    }));
   });
 
   useEffect(() => {
-    localStorage.setItem('februaryMoods', JSON.stringify(days));
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('februaryMoods', JSON.stringify(days));
+    }
   }, [days]);
 
   const handleMoodClick = (dayToUpdate: number, mood: string) => {
@@ -38,6 +50,10 @@ export default function MoodTracker() {
           : day
       )
     );
+  };
+
+  const getBackgroundColor = (mood: string | null): string => {
+    return mood ? moodOptions[mood] : '#e0e0e0';
   };
 
   return (
@@ -59,9 +75,7 @@ export default function MoodTracker() {
             <div 
               className="heart"
               style={{ 
-                backgroundColor: day.mood 
-                  ? moodOptions[day.mood] 
-                  : '#e0e0e0' 
+                backgroundColor: getBackgroundColor(day.mood)
               }}
             >
               <span className="day-number">{day.day}</span>
@@ -89,7 +103,10 @@ export default function MoodTracker() {
         <h2>Monthly Overview</h2>
         {Object.entries(moodOptions).map(([mood, color]) => (
           <div key={mood} className="stat-item">
-            <div className="color-circle" style={{ backgroundColor: color }}></div>
+            <div 
+              className="color-circle" 
+              style={{ backgroundColor: color }}
+            ></div>
             <span>{mood}: </span>
             <span>{days.filter(d => d.mood === mood).length} days</span>
           </div>
