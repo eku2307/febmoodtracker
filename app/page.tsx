@@ -1,5 +1,5 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 // Number of days in February (leap year)
 const daysInFeb = 29;
@@ -44,15 +44,48 @@ function Heart({ filled, onClick, color }: { filled: boolean, onClick: () => voi
 }
 
 export default function MoodTracker() {
-  const [moodsState, setMoodsState] = useState(Array(daysInFeb).fill('none'));
-  const [selectedMood, setSelectedMood] = useState('happy');
+  // Load mood data from localStorage on initial mount
+  const [moodsState, setMoodsState] = useState<string[]>(() => {
+    // Check if we're in a browser environment (not server-side rendering)
+    if (typeof window !== 'undefined') {
+      const savedMoods = localStorage.getItem('februaryMoods');
+      return savedMoods ? JSON.parse(savedMoods) : Array(daysInFeb).fill('none');
+    }
+    return Array(daysInFeb).fill('none');
+  });
+  
+  const [selectedMood, setSelectedMood] = useState(() => {
+    // Load selected mood from localStorage if available
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('selectedMood') || 'happy';
+    }
+    return 'happy';
+  });
+
+  // Save to localStorage whenever moods change
+  useEffect(() => {
+    localStorage.setItem('februaryMoods', JSON.stringify(moodsState));
+  }, [moodsState]);
+
+  // Save selected mood to localStorage when it changes
+  useEffect(() => {
+    localStorage.setItem('selectedMood', selectedMood);
+  }, [selectedMood]);
 
   const handleHeartClick = (index: number) => {
     setMoodsState(prev => {
       const newMoods = [...prev];
-      newMoods[index] = selectedMood;
+      // Toggle between selected mood and none
+      newMoods[index] = newMoods[index] === selectedMood ? 'none' : selectedMood;
       return newMoods;
     });
+  };
+
+  // Function to reset all moods
+  const handleReset = () => {
+    if (window.confirm('Are you sure you want to reset all mood data?')) {
+      setMoodsState(Array(daysInFeb).fill('none'));
+    }
   };
 
   return (
@@ -187,6 +220,27 @@ export default function MoodTracker() {
             </div>
           ))}
         </div>
+
+        {/* Reset button */}
+        <button 
+          onClick={handleReset}
+          style={{
+            marginTop: '20px',
+            padding: '10px 20px',
+            background: 'rgba(255,255,255,0.7)',
+            border: 'none',
+            borderRadius: '12px',
+            fontFamily: "'Dancing Script', cursive",
+            fontSize: '1.2rem',
+            cursor: 'pointer',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+            transition: 'all 0.2s ease',
+          }}
+          onMouseOver={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.9)'}
+          onMouseOut={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.7)'}
+        >
+          Reset All Moods
+        </button>
       </div>
     </div>
   );
